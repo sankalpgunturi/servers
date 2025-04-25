@@ -1,0 +1,30 @@
+{
+  "name": "@sankalpgunturi/server-zendesk",
+  "version": "0.1.0",
+  "description": "MCP server for interacting with Zendesk",
+  "license": "Apache-2.0",
+  "author": "Sankalpgunturi",
+  "homepage": "https://modelcontextprotocol.io",
+  "bugs": "https://github.com/modelcontextprotocol/servers/issues",
+  "type": "module",
+  "bin": {
+    "mcp-server-zendesk": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "python"
+  ],
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/*.js",
+    "prepare": "npm run build",
+    "watch": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "shx": "^0.3.4",
+    "typescript": "^5.6.2"
+  }
+}
