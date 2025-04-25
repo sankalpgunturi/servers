@@ -14,6 +14,37 @@ interface CreateAutomationArgs {
   description: string;
 }
 
+interface ListAutomationsArgs {
+  adminAccess?: boolean;
+}
+
+interface GetAutomationArgs {
+  automationId: string;
+}
+
+interface UpdateAutomationArgs {
+  automationId: string;
+  name?: string;
+  description?: string;
+  version: number;
+  inputs?: string;
+}
+
+interface GetAutomationSummaryArgs {
+  automationId: string;
+}
+
+interface CloneAutomationArgs {
+  automationId: string;
+  name: string;
+  targetOrgId?: string;
+}
+
+interface DeleteAutomationVersionArgs {
+  automationId: string;
+  automationVersion: string;
+}
+
 // Tool definitions
 const createAutomationTool: Tool = {
   name: 'pinkfish_create_automation',
@@ -31,6 +62,124 @@ const createAutomationTool: Tool = {
       },
     },
     required: ['name', 'description'],
+  },
+};
+
+const listAutomationsTool: Tool = {
+  name: 'pinkfish_list_automations',
+  description: 'List all automations the user has access to',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      adminAccess: {
+        type: 'boolean',
+        description: 'Whether to include automations accessible with admin privileges',
+      },
+    },
+    required: [],
+  },
+};
+
+const getAutomationTool: Tool = {
+  name: 'pinkfish_get_automation',
+  description: 'Get details of a specific automation by ID',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      automationId: {
+        type: 'string',
+        description: 'The ID of the automation to retrieve',
+      },
+    },
+    required: ['automationId'],
+  },
+};
+
+const updateAutomationTool: Tool = {
+  name: 'pinkfish_update_automation',
+  description: 'Update an existing automation',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      automationId: {
+        type: 'string',
+        description: 'The ID of the automation to update',
+      },
+      name: {
+        type: 'string',
+        description: 'The new name of the automation',
+      },
+      description: {
+        type: 'string',
+        description: 'The new description of the automation',
+      },
+      version: {
+        type: 'number',
+        description: 'The current version of the automation (required for version control)',
+      },
+      inputs: {
+        type: 'string',
+        description: 'JSON string of inputs for the automation',
+      },
+    },
+    required: ['automationId', 'version'],
+  },
+};
+
+const getAutomationSummaryTool: Tool = {
+  name: 'pinkfish_get_automation_summary',
+  description: 'Get a detailed summary of an automation',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      automationId: {
+        type: 'string',
+        description: 'The ID of the automation to get the summary for',
+      },
+    },
+    required: ['automationId'],
+  },
+};
+
+const cloneAutomationTool: Tool = {
+  name: 'pinkfish_clone_automation',
+  description: 'Create a copy of an existing automation',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      automationId: {
+        type: 'string',
+        description: 'The ID of the automation to clone',
+      },
+      name: {
+        type: 'string',
+        description: 'The name for the cloned automation',
+      },
+      targetOrgId: {
+        type: 'string',
+        description: 'Optional organization ID to clone the automation to',
+      },
+    },
+    required: ['automationId', 'name'],
+  },
+};
+
+const deleteAutomationVersionTool: Tool = {
+  name: 'pinkfish_delete_automation_version',
+  description: 'Delete a specific version of an automation',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      automationId: {
+        type: 'string',
+        description: 'The ID of the automation',
+      },
+      automationVersion: {
+        type: 'string',
+        description: 'The version of the automation to delete',
+      },
+    },
+    required: ['automationId', 'automationVersion'],
   },
 };
 
@@ -64,6 +213,105 @@ class PinkfishClient {
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Failed to create automation: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    return response.json();
+  }
+
+  async listAutomations(adminAccess?: boolean): Promise<any> {
+    const url = new URL(this.apiUrl);
+    if (adminAccess) {
+      url.searchParams.append('adminAccess', 'true');
+    }
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: this.headers,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to list automations: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    return response.json();
+  }
+
+  async getAutomation(automationId: string): Promise<any> {
+    const response = await fetch(`${this.apiUrl}/${automationId}`, {
+      method: 'GET',
+      headers: this.headers,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to get automation: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    return response.json();
+  }
+
+  async updateAutomation(automationId: string, data: UpdateAutomationArgs): Promise<any> {
+    const response = await fetch(`${this.apiUrl}/${automationId}`, {
+      method: 'PUT',
+      headers: this.headers,
+      body: JSON.stringify({
+        name: data.name,
+        description: data.description,
+        version: data.version,
+        inputs: data.inputs,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to update automation: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    return response.json();
+  }
+
+  async getAutomationSummary(automationId: string): Promise<any> {
+    const response = await fetch(`${this.apiUrl}/${automationId}/summary`, {
+      method: 'GET',
+      headers: this.headers,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to get automation summary: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    return response.json();
+  }
+
+  async cloneAutomation(automationId: string, name: string, targetOrgId?: string): Promise<any> {
+    const response = await fetch(`${this.apiUrl}/${automationId}/clone`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify({
+        name,
+        ...(targetOrgId && { targetOrgId }),
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to clone automation: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    return response.json();
+  }
+
+  async deleteAutomationVersion(automationId: string, automationVersion: string): Promise<any> {
+    const response = await fetch(`${this.apiUrl}/${automationId}/v/${automationVersion}`, {
+      method: 'DELETE',
+      headers: this.headers,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to delete automation version: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     return response.json();
@@ -126,6 +374,76 @@ async function main() {
             };
           }
 
+          case 'pinkfish_list_automations': {
+            const args = request.params.arguments as unknown as ListAutomationsArgs;
+            const response = await pinkfishClient.listAutomations(args.adminAccess);
+            return {
+              content: [{ type: 'text', text: JSON.stringify(response) }],
+            };
+          }
+
+          case 'pinkfish_get_automation': {
+            const args = request.params.arguments as unknown as GetAutomationArgs;
+            if (!args.automationId) {
+              throw new Error('Missing required argument: automationId');
+            }
+            const response = await pinkfishClient.getAutomation(args.automationId);
+            return {
+              content: [{ type: 'text', text: JSON.stringify(response) }],
+            };
+          }
+
+          case 'pinkfish_update_automation': {
+            const args = request.params.arguments as unknown as UpdateAutomationArgs;
+            if (!args.automationId || args.version === undefined) {
+              throw new Error('Missing required arguments: automationId and version');
+            }
+            const response = await pinkfishClient.updateAutomation(args.automationId, args);
+            return {
+              content: [{ type: 'text', text: JSON.stringify(response) }],
+            };
+          }
+
+          case 'pinkfish_get_automation_summary': {
+            const args = request.params.arguments as unknown as GetAutomationSummaryArgs;
+            if (!args.automationId) {
+              throw new Error('Missing required argument: automationId');
+            }
+            const response = await pinkfishClient.getAutomationSummary(args.automationId);
+            return {
+              content: [{ type: 'text', text: JSON.stringify(response) }],
+            };
+          }
+
+          case 'pinkfish_clone_automation': {
+            const args = request.params.arguments as unknown as CloneAutomationArgs;
+            if (!args.automationId || !args.name) {
+              throw new Error('Missing required arguments: automationId and name');
+            }
+            const response = await pinkfishClient.cloneAutomation(
+              args.automationId,
+              args.name,
+              args.targetOrgId
+            );
+            return {
+              content: [{ type: 'text', text: JSON.stringify(response) }],
+            };
+          }
+
+          case 'pinkfish_delete_automation_version': {
+            const args = request.params.arguments as unknown as DeleteAutomationVersionArgs;
+            if (!args.automationId || !args.automationVersion) {
+              throw new Error('Missing required arguments: automationId and automationVersion');
+            }
+            const response = await pinkfishClient.deleteAutomationVersion(
+              args.automationId,
+              args.automationVersion
+            );
+            return {
+              content: [{ type: 'text', text: JSON.stringify(response) }],
+            };
+          }
+
           default:
             throw new Error(`Unknown tool: ${request.params.name}`);
         }
@@ -150,6 +468,12 @@ async function main() {
     return {
       tools: [
         createAutomationTool,
+        listAutomationsTool,
+        getAutomationTool,
+        updateAutomationTool,
+        getAutomationSummaryTool,
+        cloneAutomationTool,
+        deleteAutomationVersionTool,
       ],
     };
   });
